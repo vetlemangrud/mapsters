@@ -17,6 +17,9 @@ importers:
       chance:
         specifier: ^1.1.12
         version: 1.1.12
+      mapsters:
+        specifier: 'file:'
+        version: 'file:'
       three:
         specifier: ^0.169.0
         version: 0.169.0
@@ -666,6 +669,9 @@ packages:
   magic-string@0.30.12:
     resolution: {integrity: sha512-Ea8I3sQMVXr8JhN4z+H/d8zwo+tYDgHE9+5G4Wnrwhs0gaK9fXTKx0Tw5Xwsd/bCPTTZNRAdpyzvoeORe9LYpw==}
 
+  'mapsters@file:':
+    resolution: {directory: '', type: directory}
+
   mdn-data@2.0.30:
     resolution: {integrity: sha512-GaqWWShW4kv/G9IEucWScBx9G1/vsFZZJUO+tD26M8J8z3Kw5RDQjaoZe03YAClgeS/SWPOcb4nkFBTEi5DUEA==}
 
@@ -820,6 +826,10 @@ packages:
   reusify@1.0.4:
     resolution: {integrity: sha512-U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
+
+  reveal.js@5.1.0:
+    resolution: {integrity: sha512-KDt7m0+xwKV6nAZt4CNPVFBf42sTKRQapg0bGGKB5PKO5XvChnMfwlZkybydHiQJ7p5+6LbHKRGrhXODdoNIaA==}
+    engines: {node: '>=18.0.0'}
 
   rollup@4.24.0:
     resolution: {integrity: sha512-DOmrlGSXNk1DM0ljiQA+i+o0rSLhtii1je5wgk60j49d1jHT5YYttBv1iWOnYSTG+fZZESUOSNiAl89SIet+Cg==}
@@ -1507,6 +1517,14 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.0
 
+  'mapsters@file:':
+    dependencies:
+      '@spissvinkel/simplex-noise': 1.0.1
+      '@types/chance': 1.1.6
+      chance: 1.1.12
+      reveal.js: 5.1.0
+      three: 0.169.0
+
   mdn-data@2.0.30: {}
 
   merge2@1.4.1: {}
@@ -1629,6 +1647,8 @@ snapshots:
       supports-preserve-symlinks-flag: 1.0.0
 
   reusify@1.0.4: {}
+
+  reveal.js@5.1.0: {}
 
   rollup@4.24.0:
     dependencies:

@@ -11,5 +11,9 @@
   });
 </script>
 
-<h1>Map for planet {planet[0].toUpperCase() + planet.slice(1)}</h1>
-<canvas id="map" bind:this={canvas} width="1000" height="1000"></canvas>
+<div class="text-center m-auto flex flex-col items-center justify-center">
+  <h1 class="text-white text-3xl mt-4">
+    Map for planet {planet[0].toUpperCase() + planet.slice(1)}
+  </h1>
+  <canvas id="map" bind:this={canvas} width="1000" height="1000"></canvas>
+</div>
