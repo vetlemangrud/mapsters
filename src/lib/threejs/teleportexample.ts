@@ -1,3 +1,4 @@
+// This file is littered with AI and example code. Readers beware
 import * as THREE from "three";
 
 import { VRButton } from "three/addons/webxr/VRButton.js";
@@ -37,6 +38,7 @@ function createGroundImage(
     map: texture,
     transparent: true,
     side: THREE.DoubleSide,
+    opacity: 0.2,
   });
 
   // Create plane geometry
@@ -45,17 +47,60 @@ function createGroundImage(
   // Create mesh
   const plane = new THREE.Mesh(geometry, material);
 
-  // Position the plane
-  // Find height at the given position by raycasting
-  const heightAtPoint =
-    getHeightAtPoint(position.x, position.z, terrainMesh) ?? 0;
-  plane.position.set(
-    position.x + terrainMesh.position.x,
-    heightAtPoint + 0.01 + terrainMesh.position.y,
-    position.z + terrainMesh.position.z
-  );
+  // Create raycaster
+  const raycaster = new THREE.Raycaster();
+  raycaster.ray.direction.set(0, -1, 0);
+  raycaster.ray.origin.set(position.x, 100, position.z);
 
-  plane.rotation.x = -Math.PI / 2;
+  const intersects = raycaster.intersectObject(terrainMesh);
+
+  if (intersects.length > 0) {
+    const intersectionPoint = intersects[0].point;
+    const normal = intersects[0].face.normal.clone();
+
+    // If the terrain's normals are in local space, transform them to world space
+    normal.transformDirection(terrainMesh.matrixWorld);
+
+    // Position slightly above the intersection point in the direction of the normal
+    plane.position.copy(intersectionPoint);
+    plane.position.x += terrainMesh.position.x;
+    plane.position.y += terrainMesh.position.y;
+    plane.position.z += terrainMesh.position.z;
+    plane.position.addScaledVector(normal, 0.01); // Small offset to prevent z-fighting
+
+    // Create a rotation matrix to align the plane with the terrain normal
+    const alignMatrix = new THREE.Matrix4();
+    const up = new THREE.Vector3(0, 1, 0);
+
+    // Calculate the rotation needed to align the plane's normal with the terrain normal
+    if (Math.abs(normal.dot(up)) < 0.9999) {
+      // Create quaternion for the rotation
+      const quaternion = new THREE.Quaternion();
+
+      // Find the rotation axis by crossing up vector with normal
+      const rotationAxis = new THREE.Vector3();
+      rotationAxis.crossVectors(up, normal).normalize();
+
+      // Find the angle between vectors
+      const angle = Math.acos(up.dot(normal));
+
+      // Set the quaternion for normal alignment
+      quaternion.setFromAxisAngle(rotationAxis, angle);
+
+      // Create a rotation for laying flat (90 degrees around X-axis)
+      const flatRotation = new THREE.Quaternion();
+      flatRotation.setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+
+      // Combine the rotations: first align with normal, then rotate to lay flat
+      quaternion.multiply(flatRotation);
+
+      // Apply the combined rotation to the plane
+      plane.setRotationFromQuaternion(quaternion);
+    } else if (normal.y < 0) {
+      // Handle case where normal points straight down
+      plane.rotation.x = 0; // Changed from Math.PI to 0
+    }
+  }
   return plane;
 }
 
@@ -179,7 +224,12 @@ export function initTeleportExample(parent: HTMLElement, planetName: string) {
     z: p.y,
   }));
   for (let i = 0; i < SHAPE_IMAGES.length; i++) {
-    scene.add(createGroundImage(SHAPE_IMAGES[i], shapePositions[i], terrain));
+    scene.add(
+      createGroundImage(SHAPE_IMAGES[i], shapePositions[i], terrain, {
+        width: 0.1,
+        height: 0.1,
+      })
+    );
   }
 
   raycaster = new THREE.Raycaster();
