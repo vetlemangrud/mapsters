@@ -18,3 +18,26 @@ export const generateTerrainFunction = (seed: string) => {
     );
   };
 };
+
+export const SHAPE_IMAGES = ["/1.png", "/2.png", "/3.png", "/4.png", "/5.png"];
+export const SHAPES: Promise<HTMLImageElement>[] = SHAPE_IMAGES.map(
+  (n) =>
+    new Promise((resolve, reject) => {
+      let img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = n;
+    })
+);
+
+export const getShapePositions = (seed: string) => {
+  const chance = new Chance(seed);
+  const positions = [];
+  for (let i = 0; i < SHAPES.length; i++) {
+    positions.push({
+      x: chance.floating({ min: 10, max: WIDTH - 10 }),
+      y: chance.floating({ min: 10, max: HEIGHT - 10 }),
+    });
+  }
+  return positions;
+};

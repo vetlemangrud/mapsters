@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 import { generateTerrainMesh } from "./createTerrainMesh";
+import { getShapePositions, SHAPE_IMAGES } from "$lib/terraingen";
 
 let camera: THREE.Camera,
   scene: THREE.Scene,
@@ -17,6 +18,46 @@ let terrain, baseReferenceSpace;
 
 let INTERSECTION;
 const tempMatrix = new THREE.Matrix4();
+
+function createGroundImage(
+  imageUrl: string,
+  position: { x: number; z: number },
+  terrainMesh: THREE.Mesh,
+  size = { width: 1, height: 1 }
+) {
+  // Thnx Claude
+  // Create a texture loader
+  const textureLoader = new THREE.TextureLoader();
+
+  // Load the PNG texture with transparency
+  const texture = textureLoader.load(imageUrl);
+
+  // Create material with transparency enabled
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.DoubleSide,
+  });
+
+  // Create plane geometry
+  const geometry = new THREE.PlaneGeometry(size.width, size.height);
+
+  // Create mesh
+  const plane = new THREE.Mesh(geometry, material);
+
+  // Position the plane
+  // Find height at the given position by raycasting
+  const heightAtPoint =
+    getHeightAtPoint(position.x, position.z, terrainMesh) ?? 0;
+  plane.position.set(
+    position.x + terrainMesh.position.x,
+    heightAtPoint + 0.01 + terrainMesh.position.y,
+    position.z + terrainMesh.position.z
+  );
+
+  plane.rotation.x = -Math.PI / 2;
+  return plane;
+}
 
 function getHeightAtPoint(x: number, z: number, terrainMesh: THREE.Mesh) {
   // Thnx Claude
@@ -131,6 +172,15 @@ export function initTeleportExample(parent: HTMLElement, planetName: string) {
 
   terrain.castShadow = true;
   scene.add(terrain);
+
+  // Add images
+  const shapePositions = getShapePositions(planetName).map((p) => ({
+    x: p.x,
+    z: p.y,
+  }));
+  for (let i = 0; i < SHAPE_IMAGES.length; i++) {
+    scene.add(createGroundImage(SHAPE_IMAGES[i], shapePositions[i], terrain));
+  }
 
   raycaster = new THREE.Raycaster();
   raycaster.far = 20;

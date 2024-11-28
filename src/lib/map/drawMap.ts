@@ -1,4 +1,10 @@
-import { generateTerrainFunction, HEIGHT, WIDTH } from "$lib/terraingen";
+import {
+  generateTerrainFunction,
+  HEIGHT,
+  WIDTH,
+  getShapePositions,
+  SHAPES,
+} from "$lib/terraingen";
 
 type color = { r: number; g: number; b: number };
 const color = (r: number, g: number, b: number) => ({ r, g, b });
@@ -45,6 +51,7 @@ export const drawMap = (
     }
   }
   drawContourLines(planetName, ctx, imageWidth, imageHeight);
+  drawShapes(planetName, ctx, imageWidth, imageHeight);
 };
 
 const quantize = (value: number, delta: number) =>
@@ -82,4 +89,24 @@ const drawContourLines = (
     }
   }
   // Use dilation to thicken lines
+};
+
+const drawShapes = async (
+  planetName: string,
+  ctx: CanvasRenderingContext2D,
+  imageWidth: number,
+  imageHeight: number
+) => {
+  const shapePositions = getShapePositions(planetName);
+  console.log(shapePositions);
+
+  for (let i = 0; i < SHAPES.length; i++) {
+    ctx.drawImage(
+      await SHAPES[i],
+      (imageWidth * shapePositions[i].x) / WIDTH - 10,
+      (imageHeight * shapePositions[i].y) / HEIGHT - 10,
+      20,
+      20
+    );
+  }
 };

@@ -29,6 +29,7 @@ export const generateTerrainMesh = (planetName: string) => {
       indices.push(coordToIndex(x, z));
       indices.push(coordToIndex(x, z + 1));
       indices.push(coordToIndex(x + 1, z));
+
       // Second triangle
       indices.push(coordToIndex(x, z + 1));
       indices.push(coordToIndex(x + 1, z + 1));
