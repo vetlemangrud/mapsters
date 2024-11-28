@@ -4,8 +4,8 @@ import Chance from "chance";
 
 export const WIDTH = 200;
 export const HEIGHT = 200;
-const MAX_HEIGHT = 50;
-const SIMPLEX_DELTA = 0.02; // More delta = less smooth
+const MAX_HEIGHT = 40;
+const SIMPLEX_DELTA = 0.01; // More delta = less smooth
 
 export const generateTerrainFunction = (seed: string) => {
   const chance = new Chance(seed);

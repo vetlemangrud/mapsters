@@ -1,4 +1,4 @@
-<div class="m-auto h-screen flex items-center justify-center">
+<div class="m-auto h-screen flex flex-col items-center justify-center">
   <form
     action="/agent"
     method="get"

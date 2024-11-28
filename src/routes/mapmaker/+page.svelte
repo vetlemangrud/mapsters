@@ -5,11 +5,14 @@
   import { onMount } from "svelte";
   const planet = $page.url.searchParams.get("planet") ?? "";
   let canvas: HTMLCanvasElement;
+  let canvas2: HTMLCanvasElement;
   onMount(() => {
     const ctx = canvas.getContext("2d");
-    if (ctx) drawMap(planet, ctx, 500, 500);
+    if (ctx) drawMap(planet, ctx, 1000, 1000);
+    const ctx2 = canvas2.getContext("2d");
+    if (ctx2) drawMap(planet, ctx2, 500, 500);
   });
 </script>
 
 <h1>Map for planet {planet[0].toUpperCase() + planet.slice(1)}</h1>
-<canvas id="map" bind:this={canvas} class="w-[600px] h-[600px]"></canvas>
+<canvas id="map" bind:this={canvas} width="1000" height="1000"></canvas>

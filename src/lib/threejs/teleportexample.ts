@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
-import { BoxLineGeometry } from "three/addons/geometries/BoxLineGeometry.js";
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
+import { generateTerrainMesh } from "./createTerrainMesh";
 
 let camera: THREE.Camera,
   scene: THREE.Scene,
@@ -11,52 +11,129 @@ let camera: THREE.Camera,
 let controller1: THREE.XRTargetRaySpace, controller2: THREE.XRTargetRaySpace;
 let controllerGrip1, controllerGrip2;
 
-let room, marker, floor, baseReferenceSpace;
+// let marker;
+let compass;
+let terrain, baseReferenceSpace;
 
 let INTERSECTION;
 const tempMatrix = new THREE.Matrix4();
 
-export function initTeleportExample(parent: HTMLElement) {
+function getHeightAtPoint(x: number, z: number, terrainMesh: THREE.Mesh) {
+  // Thnx Claude
+  const raycaster = new THREE.Raycaster();
+  const direction = new THREE.Vector3(0, -1, 0); // Ray pointing down
+  // Position ray high above the terrain
+  const startPosition = new THREE.Vector3(x, 1000, z);
+  raycaster.set(startPosition, direction);
+
+  // Check for intersection with terrain
+  const intersects = raycaster.intersectObject(terrainMesh);
+
+  if (intersects.length > 0) {
+    return intersects[0].point.y;
+  }
+  return null; // No intersection found
+}
+
+export function initTeleportExample(parent: HTMLElement, planetName: string) {
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x505050);
+  scene.background = new THREE.Color(0x87ceeb);
 
   camera = new THREE.PerspectiveCamera(
     50,
     window.innerWidth / window.innerHeight,
     0.1,
-    10
+    2000
   );
-  camera.position.set(0, 1, 3);
+  // Create a glowing sun sphere
+  const sunGeometry = new THREE.SphereGeometry(50, 32, 32);
+  const sunMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffff00,
+    emissive: 0xffff00,
+    emissiveIntensity: 1,
+  });
+  const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+  sun.position.set(100, 400, 100); // Position the sun
+  scene.add(sun);
+  scene.fog = new THREE.Fog(0x87ceeb, 200, 1000);
 
-  room = new THREE.LineSegments(
-    new BoxLineGeometry(6, 6, 6, 10, 10, 10).translate(0, 3, 0),
-    new THREE.LineBasicMaterial({ color: 0xbcbcbc })
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Lower intensity for better contrast
+  scene.add(ambientLight);
+
+  // Complement it with hemisphere light for more natural lighting
+  const hemisphereLight = new THREE.HemisphereLight(
+    0xffffff, // Sky color
+    0xb97a20, // Ground color
+    0.5 // Intensity
   );
-  scene.add(room);
+  scene.add(hemisphereLight);
 
-  scene.add(new THREE.HemisphereLight(0xa5a5a5, 0x898989, 3));
+  // Add directional light for sun rays
+  const sunlight = new THREE.DirectionalLight(0xffffff, 1);
+  sunlight.position.copy(sun.position);
+  scene.add(sunlight);
 
-  const light = new THREE.DirectionalLight(0xffffff, 3);
-  light.position.set(1, 1, 1).normalize();
-  scene.add(light);
+  // Optional: Add shadows
+  sunlight.castShadow = true;
+  sunlight.shadow.bias = -0.0001; // Reduce shadow acne
+  sunlight.shadow.normalBias = 0.1; // Help with self-shadowing artifacts
+  sunlight.shadow.mapSize.width = 2048;
+  sunlight.shadow.mapSize.height = 2048;
+  sunlight.shadow.camera.near = 0.5;
+  sunlight.shadow.camera.far = 500;
 
-  marker = new THREE.Mesh(
-    new THREE.CircleGeometry(0.25, 32).rotateX(-Math.PI / 2),
+  // marker = new THREE.Mesh(
+  //   new THREE.CircleGeometry(0.25, 32).rotateX(-Math.PI / 2),
+  //   new THREE.MeshBasicMaterial({ color: 0xbcbcbc })
+  // );
+  // scene.add(marker);
+  compass = new THREE.Mesh(
+    new THREE.CircleGeometry(0.1, 20).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ color: 0xbcbcbc })
   );
-  scene.add(marker);
 
-  floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(4.8, 4.8, 2, 2).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({
-      color: 0xbcbcbc,
-      transparent: true,
-      opacity: 0.25,
-    })
+  const arrowGeometry = new THREE.BufferGeometry();
+  const vertices = new Float32Array([
+    0,
+    0.08,
+    0, // tip of arrow
+    -0.02,
+    0,
+    0, // left base
+    0.02,
+    0,
+    0, // right base
+  ]);
+  arrowGeometry.setAttribute(
+    "position",
+    new THREE.BufferAttribute(vertices, 3)
   );
-  scene.add(floor);
+
+  const northMarker = new THREE.Mesh(
+    arrowGeometry,
+    new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide })
+  );
+
+  // Position the marker above the compass base to avoid z-fighting
+  northMarker.position.y = 0.001;
+  northMarker.rotateX(Math.PI / 2);
+  northMarker.rotateZ(Math.PI);
+
+  // Add the marker to the compass
+  compass.add(northMarker);
+  scene.add(compass);
+
+  terrain = generateTerrainMesh(planetName);
+  terrain.position.x = -100;
+  terrain.position.z = -100;
+  terrain.position.y = -(getHeightAtPoint(0, 0, terrain) ?? 0);
+  terrain.receiveShadow = true;
+
+  terrain.castShadow = true;
+  scene.add(terrain);
 
   raycaster = new THREE.Raycaster();
+  raycaster.far = 20;
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -186,6 +263,7 @@ function onWindowResize() {
 //
 
 function animate() {
+  // Teleport target
   INTERSECTION = undefined;
 
   if (controller1.userData.isSelecting === true) {
@@ -194,7 +272,7 @@ function animate() {
     raycaster.ray.origin.setFromMatrixPosition(controller1.matrixWorld);
     raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-    const intersects = raycaster.intersectObjects([floor]);
+    const intersects = raycaster.intersectObject(terrain);
 
     if (intersects.length > 0) {
       INTERSECTION = intersects[0].point;
@@ -205,16 +283,37 @@ function animate() {
     raycaster.ray.origin.setFromMatrixPosition(controller2.matrixWorld);
     raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-    const intersects = raycaster.intersectObjects([floor]);
+    const intersects = raycaster.intersectObject(terrain);
 
     if (intersects.length > 0) {
       INTERSECTION = intersects[0].point;
     }
   }
 
-  if (INTERSECTION) marker.position.copy(INTERSECTION);
+  // Compass
+  const tempPosition = new THREE.Vector3();
+  const tempQuaternion = new THREE.Quaternion();
+  const tempScale = new THREE.Vector3();
+  controller1.matrixWorld.decompose(tempPosition, tempQuaternion, tempScale);
 
-  marker.visible = INTERSECTION !== undefined;
+  // Position compass above controller
+  compass.position.copy(tempPosition);
+  compass.position.y += 0.05; // Adjust this value to change how high above the controller it floats
+
+  // if (INTERSECTION) {
+  //   marker.position.copy(INTERSECTION);
+  //   // Create a rotation matrix from the normal
+  //   const normalMatrix = new THREE.Matrix4();
+  //   const up = new THREE.Vector3(0, 1, 0);
+
+  //   // Calculate rotation from up vector to normal
+  //   normalMatrix.lookAt(new THREE.Vector3(), intersection.face.normal, up);
+
+  //   // Apply rotation to marker
+  //   marker.setRotationFromMatrix(normalMatrix);
+  // }
+
+  // marker.visible = INTERSECTION !== undefined;
 
   renderer.render(scene, camera);
 }

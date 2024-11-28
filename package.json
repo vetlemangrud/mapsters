@@ -27,6 +27,7 @@
 		"@spissvinkel/simplex-noise": "^1.0.1",
 		"@types/chance": "^1.1.6",
 		"chance": "^1.1.12",
+		"mapsters": "file:",
 		"three": "^0.169.0"
 	}
 }
